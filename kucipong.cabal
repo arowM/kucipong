@@ -160,6 +160,7 @@ library
                      , ViewPatterns
   other-extensions:    QuasiQuotes
                      , TemplateHaskell
+                     , UndecidableInstances
 
 executable kucipong
   hs-source-dirs:      app
@@ -200,6 +201,7 @@ executable kucipong
                      , ViewPatterns
   other-extensions:    QuasiQuotes
                      , TemplateHaskell
+                     , UndecidableInstances
 
 executable kucipong-add-admin
   hs-source-dirs:      app
@@ -246,6 +248,7 @@ executable kucipong-add-admin
                      , ViewPatterns
   other-extensions:    QuasiQuotes
                      , TemplateHaskell
+                     , UndecidableInstances
 
 test-suite kucipong-test
   type:                exitcode-stdio-1.0

@@ -5,10 +5,12 @@ module Kucipong.Handler.Store.Coupon where
 import Kucipong.Prelude
 
 import Control.FromSum (fromEitherMM, fromMaybeM)
+import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import Control.Lens (_Wrapped, view)
 import Data.Default (def)
 import Data.HVect (HVect(..))
 import Database.Persist.Sql (Entity(..), fromSqlKey)
+import Text.Heterocephalus (overwrite)
 import Web.Spock (ActionCtxT, params, redirect, renderRoute)
 import Web.Spock.Core (SpockCtxT, get, post)
 
@@ -76,11 +78,58 @@ couponGet
   => Key Coupon -> ActionCtxT (HVect xs) m ()
 couponGet couponKey = do
   (StoreSession email) <- getStoreEmail
-  maybeCouponEntity <- dbFindCouponByEmailAndId email couponKey
-  maybeStoreEntity <- dbFindStoreByEmail email
-  let maybeImage = couponImage . entityVal =<< maybeCouponEntity
-  maybeImageUrl <- traverse awsImageS3Url maybeImage
-  $(renderTemplateFromEnv "storeUser_store_coupon_id.html")
+  entities <- runMaybeT $ do
+    (Entity couponKey' (coupon :: Coupon)) <- MaybeT $ dbFindCouponByEmailAndId email couponKey
+    (Entity storeKey store) <- MaybeT $ dbFindStoreByEmail email
+    maybeImageUrl <- lift . traverse awsImageS3Url $ couponImage coupon
+    let imageUrl = maybe "" maybeImageUrl
+    pure (couponKey, coupon, storeKey, store, imageUrl)
+    let
+      storeName' = storeName
+      storeAddress' = storeAddress
+      couponTitle' = couponTitle
+      couponCouponType' = couponCouponType
+      couponValidFrom' = couponValidFrom
+      couponValidUntil' = couponValidUntil
+      couponDiscountPercent' = couponDiscountPercent
+      couponDiscountMinimumPrice' = couponDiscountMinimumPrice
+      couponDiscountOtherConditions' = couponDiscountOtherConditions
+      couponGiftContent' = couponGiftContent
+      couponGiftMinimumPrice' = couponGiftMinimumPrice
+      couponGiftReferencePrice' = couponGiftReferencePrice
+      couponGiftOtherConditions' = couponGiftOtherConditions
+      couponSetContent' = couponSetContent
+      couponSetPrice' = couponSetPrice
+      couponSetReferencePrice' = couponSetReferencePrice
+      couponSetOtherConditions' = couponSetOtherConditions
+      couponOtherContent' = couponOtherContent
+      couponOtherConditions' = couponOtherConditions
+      formatDiscountPercent percent = percentToText percent <> "% OFF"
+      formatCurrency price =  "$" <> priceToText price
+      formatValidFrom day = "From " <> tshow day
+      formatValidUntil day = "To " <> tshow day
+    lift $(renderTemplate "storeUser_store_coupon_id.html" $ do
+      overwrite "storeName" [| fromMaybe "(no title)" (storeName' store) |]
+      overwrite "maybeStoreAddress" [| storeAddress' store |]
+      overwrite "imageUrl" [| fromMaybe mempty maybeImageUrl |]
+      overwrite "couponTitle" [| couponTitle' coupon |]
+      overwrite "couponType" [| couponCouponType' coupon |]
+      overwrite "validFrom" [| maybe mempty formatValidFrom $ couponValidFrom' coupon |]
+      overwrite "validUntil" [| maybe mempty formatValidUntil $ couponValidUntil' coupon |]
+      overwrite "discountPercent" [| maybe mempty formatDiscountPercent $ couponDiscountPercent' coupon |]
+      overwrite "discountMinimumPrice" [| maybe mempty tshow $ couponDiscountMinimumPrice' coupon |]
+      overwrite "discountOtherConditions" [| concat $ lines . tshow <$> couponDiscountOtherConditions' coupon |]
+      overwrite "giftContent" [| maybe mempty tshow $ couponGiftContent' coupon |]
+      overwrite "giftMinimumPrice" [| maybe mempty formatCurrency $ couponGiftMinimumPrice' coupon |]
+      overwrite "giftReferencePrice" [| maybe mempty formatCurrency $ couponGiftReferencePrice' coupon |]
+      overwrite "giftOtherConditions" [| concat $ lines . tshow <$> couponGiftOtherConditions' coupon |]
+      overwrite "setContent" [| maybe mempty tshow $ couponSetContent' coupon |]
+      overwrite "setPrice" [| maybe mempty formatCurrency $ couponSetPrice' coupon |]
+      overwrite "setReferencePrice" [| maybe mempty formatCurrency $ couponSetReferencePrice' coupon |]
+      overwrite "setOtherConditions" [| concat $ lines . tshow <$> couponSetOtherConditions' coupon |]
+      overwrite "otherContent" [| maybe mempty tshow $ couponOtherContent' coupon |]
+      overwrite "otherConditions" [| concat $ lines . tshow <$> couponOtherConditions' coupon |]
+      )
 
 couponEditGet
   :: forall xs n m.
