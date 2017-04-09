@@ -29,7 +29,7 @@ import Kucipong.Form
         AdminStoreDeleteConfirmForm(AdminStoreDeleteConfirmForm),
         AdminStoreLoginForm(AdminStoreLoginForm))
 import Kucipong.Handler.Admin.TemplatePath
-import Kucipong.Handler.Admin.Types (AdminError(..), AdminMsg(..))
+import Kucipong.Handler.Admin.Types (AdminError(..), AdminMsg(..), CreateStoreText(..), DeleteStoreText(..))
 import Kucipong.Handler.Route
        (adminR, adminLoginR, adminLoginVarR, adminStoreCreateR,
         adminStoreDeleteR, adminStoreDeleteConfirmR, adminStoreLoginR,
