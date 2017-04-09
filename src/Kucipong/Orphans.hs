@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 Description : Orphan instances
@@ -17,9 +18,11 @@ import Control.Monad.Logger (LoggingT, MonadLogger)
 import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Data (Data)
+import Data.Default (Default(..))
 import Numeric.Natural (Natural)
 import Language.Haskell.TH (Q, runIO)
 import Text.Blaze (Markup, ToMarkup(..), string)
+import Web.HttpApiData (FromHttpApiData(..))
 import Web.Spock (ActionCtxT, UploadedFile(..))
 
 instance MonadRandom m =>
@@ -49,3 +52,8 @@ instance ToMarkup Natural where
 deriving instance Data UploadedFile
 deriving instance Show UploadedFile
 
+instance (FromHttpApiData a) => FromHttpApiData [a] where
+  parseUrlPiece = mapM parseUrlPiece . lines
+
+instance Default Text where
+  def = ""
